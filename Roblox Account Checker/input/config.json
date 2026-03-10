@@ -1,0 +1,6 @@
+{
+    "solverKey": "RoSolve key goes here",
+    "threads": 10,
+    "logWebhook": false,
+    "webhook": "Webhook url goes here"
+}
