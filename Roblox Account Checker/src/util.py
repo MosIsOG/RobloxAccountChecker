@@ -29,7 +29,18 @@ class Util:
     
     @staticmethod
     def get_random_proxy() -> str:
-        return choice(proxies).strip("\n")
+        proxy = choice(proxies).strip("\n").strip()
+        # If no scheme, add http://
+        if "://" not in proxy:
+            proxy = f"http://{proxy}"
+        # Convert http://host:port:username:password to http://username:password@host:port
+        if "@" not in proxy:
+            scheme, rest = proxy.split("://", 1)
+            parts = rest.split(":")
+            if len(parts) == 4:
+                host, port, username, password = parts[0], parts[1], parts[2], parts[3]
+                proxy = f"{scheme}://{username}:{password}@{host}:{port}"
+        return proxy
     
     @staticmethod
     def get_config() -> dict:

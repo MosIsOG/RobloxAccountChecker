@@ -43,6 +43,11 @@ try:
 except:
     pass
 
+try:
+    os.mkdir("output/group_joins")
+except:
+    pass
+
 threading_lock = lock
 
 config = Util.get_config()

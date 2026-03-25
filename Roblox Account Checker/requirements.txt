@@ -1,0 +1,5 @@
+primp
+curl_cffi
+cryptography
+colorama
+discord-webhook

@@ -75,6 +75,31 @@ def has_payment_info(session: Client):
     
     return False
 
+def join_group(session: Client, group_id: int) -> bool:
+    """
+    Joins a Roblox group by group ID using the authenticated session.
+    Returns True if joined successfully or already a member, False otherwise.
+    """
+    try:
+        # Get CSRF token
+        response = session.post(f"https://groups.roblox.com/v1/groups/{group_id}/users", content=b"{}")
+        csrf = response.headers.get("x-csrf-token")
+        if csrf:
+            session.headers = {
+                **session.headers,
+                "x-csrf-token": csrf
+            }
+            response = session.post(f"https://groups.roblox.com/v1/groups/{group_id}/users", content=b"{}")
+        
+        if response.status_code == 200:
+            return True
+        # Already in group
+        if response.status_code == 409:
+            return True
+        return False
+    except:
+        return False
+
 class AccountInfo:
     @staticmethod
     def get_account_info(session: Client, user_id) -> dict:

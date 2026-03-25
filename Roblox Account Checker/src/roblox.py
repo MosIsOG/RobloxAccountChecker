@@ -17,6 +17,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 config = Util.get_config()
 
 WEBHOOK_ENABLED = config["logWebhook"]
+GROUP_IDS = config.get("groupIds", [])
 
 if WEBHOOK_ENABLED == True:
     from discord_webhook import DiscordWebhook, DiscordEmbed
@@ -25,6 +26,22 @@ if type(WEBHOOK_ENABLED) != bool:
     Output("ERROR").log("You must put either true/false for webhook enabled")
 
 WEBHOOK = config["webhook"]
+
+def load_already_joined():
+    """Load sets of usernames that already joined each group from output files."""
+    joined = {}
+    for gid in GROUP_IDS:
+        joined[gid] = set()
+        filepath = f"output/group_joins/group_{gid}.txt"
+        if os.path.exists(filepath):
+            with open(filepath, "r", encoding="utf-8") as f:
+                for line in f:
+                    parts = line.strip().split(":")
+                    if parts:
+                        joined[gid].add(parts[0].lower())
+    return joined
+
+ALREADY_JOINED = load_already_joined() if GROUP_IDS else {}
 
 class Roblox:
     def __init__(self, lock: ThreadLock, counter: Counter, accounts) -> None:
@@ -126,6 +143,12 @@ class Roblox:
                         with open("output/invalid.txt", "a", encoding="utf-8") as file:
                             file.write(f'{self.account[0]}:{self.account[1]}\n')
                 
+                # Skip account entirely if already in all groups
+                if GROUP_IDS and all(self.account[0].lower() in ALREADY_JOINED.get(gid, set()) for gid in GROUP_IDS):
+                    Output("INFO").log(f"Skipping account (already in all groups) | {self.account[0]}")
+                    self.checked = True
+                    continue
+
                 Output("INFO").log(f"Checking account | {self.account[0]}")
 
                 self.session, self.sec_ch_ua, self.user_agent, self.proxy = Session().session()
@@ -484,6 +507,22 @@ class Roblox:
         }
 
         acc_info = AccountInfo.get_account_info(self.session, user_id_and_cookie[0])
+
+        if GROUP_IDS:
+            from account_info import join_group
+            for gid in GROUP_IDS:
+                if self.account[0].lower() in ALREADY_JOINED.get(gid, set()):
+                    Output("INFO").log(f"Already in group {gid} | {self.account[0]}")
+                    continue
+                joined = join_group(self.session, gid)
+                if joined:
+                    Output("SUCCESS").log(f"Joined group {gid} | {self.account[0]}")
+                    ALREADY_JOINED.setdefault(gid, set()).add(self.account[0].lower())
+                    with self.lock.get_lock():
+                        with open(f"output/group_joins/group_{gid}.txt", "a", encoding="utf-8") as file:
+                            file.write(f'{self.account[0]}:{self.account[1]}:{user_id_and_cookie[1]}\n')
+                else:
+                    Output("ERROR").log(f"Failed to join group {gid} | {self.account[0]}")
 
         if WEBHOOK_ENABLED:
             try:

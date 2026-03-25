@@ -1,6 +1,7 @@
 {
-    "solverKey": "RoSolve key goes here",
+    "solverKey": "",
     "threads": 10,
     "logWebhook": false,
-    "webhook": "Webhook url goes here"
+    "webhook": "Webhook url goes here",
+    "groupIds": [89294665]
 }
